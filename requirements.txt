@@ -1,2 +1,6 @@
 fastmcp>=2.12.0
 uvicorn>=0.35.0
+vapi_server_sdk
+google-genai
+python-dotenv
+requests

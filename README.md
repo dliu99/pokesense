@@ -13,9 +13,9 @@ Fork the repo, then run:
 ```bash
 git clone <your-repo-url>
 cd mcp-server-template
-conda create -n mcp-server python=3.13
-conda activate mcp-server
-pip install -r requirements.txt
+uv venv --python 3.13 mcp-server
+.\mcp-server\Scripts\activate
+uv pip install -r requirements.txt
 ```
 
 ### Test
