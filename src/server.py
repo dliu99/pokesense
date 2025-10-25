@@ -25,7 +25,7 @@ client = genai.Client(
 )
 
 
-@mcp.tool(description="Make a call to a phone number. Use this with the search engine tool to get names & phone numbers of businesses to reserve or book something.")
+@mcp.tool(description="Make a call to a phone number (format: +1XXXXXXXXXX). Use this with the search engine tool to get names & phone numbers of businesses to reserve or book something.")
 def make_call(phone_number: str, name: str, call_info_notes_for_agent: str) -> dict:
     #generate first msg w/ gemini flash
     model = "gemini-flash-latest"
