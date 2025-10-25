@@ -1,6 +1,25 @@
 #!/usr/bin/env python3
 import os
 from fastmcp import FastMCP
+from dotenv import load_dotenv
+import requests
+
+load_dotenv()
+POKE_API_KEY = os.getenv('POKE_API_KEY')
+MESSAGE = 'test'
+
+response = requests.post(
+    'https://poke.com/api/v1/inbound-sms/webhook',
+    headers={
+        'Authorization': f'Bearer {POKE_API_KEY}',
+        'Content-Type': 'application/json'
+    },
+    json={'message': MESSAGE}
+)
+
+print(response.json())
+
+
 
 mcp = FastMCP("Sample MCP Server")
 
