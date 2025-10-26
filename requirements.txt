@@ -4,3 +4,5 @@ vapi_server_sdk
 google-genai
 python-dotenv
 requests
+fish-audio-sdk
+flask>=3.0.0

@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
 from fastmcp.client.transports import NodeStdioTransport, PythonStdioTransport, SSETransport, StreamableHttpTransport
-
-
 import os
 from fastmcp import FastMCP, Client
 from dotenv import load_dotenv
@@ -17,6 +14,9 @@ POKE_API_KEY = os.getenv('POKE_API_KEY')
 BRIGHT_DATA_API_KEY = os.getenv('BRIGHT_DATA_API_KEY')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 BRIGHT_DATA_MCP_URL = os.getenv('BRIGHT_DATA_MCP_URL')
+ass_id = "554cfbbc-f0d0-4e1b-aa88-b460ede9c553"
+phone_id = "0efe6b48-3b65-452d-9f4d-789aad9ca65c"
+
 
 vapi_client = Vapi(token=os.getenv("VAPI_API_KEY"))
 mcp = FastMCP("PokeSense MCP Server")
@@ -28,7 +28,7 @@ client = genai.Client(
 @mcp.tool(description="Make a call to a phone number (format: +1XXXXXXXXXX). Use this with the search engine tool to get names & phone numbers of businesses to reserve or book something.")
 def make_call(phone_number: str, name: str, call_info_notes_for_agent: str) -> dict:
     #generate first msg w/ gemini flash
-    model = "gemini-flash-latest"
+    model = "gemini-flash-lite-latest"
     contents = [
         types.Content(
             role="user",
@@ -62,11 +62,32 @@ Call information notes: {call_info_notes_for_agent}"""),
         config=generate_content_config,
     ):
         first_msg += chunk.text
+    
+    print("getting")
+    ass = vapi_client.assistants.get(id=ass_id)
+    print("updating")
+    vapi_client.assistants.update(id=ass_id,
+    voice={
+        "provider": "custom-voice",
+        "server": {
+            "url": "https://04148ca71dd4.ngrok-free.app/api/synthesize",
+            #"url": "https://api.fish.audio/v1/tts?reference_id=ce7e7e565bc9460db8df2dca666a3b67",
+            "secret": os.getenv("FISH_API_SECRET"),
+            "timeoutSeconds": 10,
+            #"reference_id": "ce7e7e565bc9460db8df2dca666a3b67",
+                "headers": {
+                "Content-Type": "application/json",
+                "X-API-Version": "v1",
+            },
+        },
+    
+    })
+    print("\nASKDJSKJD\n")
     try:
         res = vapi_client.calls.create(
-            phone_number_id="babd43f2-9da6-4c45-b9be-f143d5f58e10",
-            customer={"number": phone_number},
-            assistant_id="c28fcf1f-6496-407e-a142-928acc714892",
+            phone_number_id=phone_id,
+            customer={"number": "+15109497606"},
+            assistant_id=ass_id,
             assistant_overrides={
                 "firstMessage": first_msg,
                 "variableValues": {
@@ -82,14 +103,7 @@ Call information notes: {call_info_notes_for_agent}"""),
             print(res.status)
             if res.status == "in-progress" and not added:
                 print("Call is in progress")
-                '''vapi_client.calls.update(call_id, 
-                {"messages": [
-                    {
-                    "role": "system",
-                    "message": call_info_notes_for_agent,
-                    }
-                ]}
-                )'''
+
                 print("Call info notes for agent added", call_info_notes_for_agent)
                 added=True
             if res.status == "ended":
