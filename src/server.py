@@ -1,7 +1,8 @@
 from fastmcp.client.transports import NodeStdioTransport, PythonStdioTransport, SSETransport, StreamableHttpTransport
 import os
 import random
-from fastmcp import FastMCP, Client
+import fastmcp
+from fastmcp import FastMCP
 from dotenv import load_dotenv
 import requests
 from vapi import Vapi
@@ -65,7 +66,7 @@ async def search_web(query: str) -> dict:
     # bright data mcp works, but not bright data api? sorry for this convoluted setup
     
     try:
-        remote_client = Client(BRIGHT_DATA_MCP_URL)
+        remote_client = fastmcp.Client(BRIGHT_DATA_MCP_URL)
         async with remote_client:
 
             result = await remote_client.call_tool(
