@@ -115,15 +115,17 @@ def call_webhook():
         request_body = request.json
         message = request_body.get("message", {})
         message_type = message.get("type")
-        
-        # Extract call info from nested structure
-        call_obj = message.get("call", {})
-        call_id = call_obj.get("id")
         status = message.get("status")
+        call_id = message.get("call", {}).get("id")
         
         if not call_id:
             print("Warning: Missing call_id in webhook")
             return {"error": "Missing call_id"}, 400
+        
+        # Only process status-update messages
+        if message_type != "status-update":
+            print(f"Webhook received: Type={message_type}, Call={call_id} (skipped - not status-update)")
+            return {"received": True}, 200
         
         print(f"Webhook received: Type={message_type}, Call={call_id}, Status={status}")
         
@@ -134,38 +136,12 @@ def call_webhook():
             
             _calls_state[call_id]["status"] = status
             _calls_state[call_id]["updated_at"] = time.time()
-            _calls_state[call_id]["message_type"] = message_type
-            _calls_state[call_id]["raw_data"] = request_body
         
-        # Handle specific statuses
+        # Handle ended status
         if status == "ended":
-            print(f"Call {call_id} ended")
-            # Extract and store call results if available in call object
-            if call_obj:
-                with _calls_lock:
-                    _calls_state[call_id]["call_object"] = call_obj
-                    # Common fields that might be in the call object
-                    if "analysis" in call_obj:
-                        _calls_state[call_id]["analysis"] = call_obj["analysis"]
-                    if "messages" in call_obj:
-                        _calls_state[call_id]["messages"] = call_obj["messages"]
-                    if "transcript" in call_obj:
-                        _calls_state[call_id]["transcript"] = call_obj["transcript"]
-        
-        elif status == "in-progress":
-            print(f"Call {call_id} is in progress")
-        
-        elif status == "ringing":
-            print(f"Call {call_id} is ringing")
-        
-        elif status == "queued":
-            print(f"Call {call_id} is queued")
-        
-        elif status == "scheduled":
-            print(f"Call {call_id} is scheduled")
-        
-        elif status == "forwarding":
-            print(f"Call {call_id} is forwarding")
+            print(f"Call {call_id} ended - analysis will be retrieved via Vapi API")
+        else:
+            print(f"Call {call_id} status: {status}")
         
         return {"received": True}, 200
     

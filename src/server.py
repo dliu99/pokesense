@@ -169,25 +169,26 @@ My name: {my_name}"""),
         webhook_data = get_call_status_from_webhook(call_id, timeout_seconds=400)
         
         if webhook_data:
-            return {
+            pass
+            '''return {
                 "status": webhook_data.get("status"),
                 "analysis": webhook_data.get("analysis"),
                 "result": webhook_data.get("result"),
-            }
+            }'''
         else:
-            # Fallback: Get final status from Vapi if webhook didn't complete
-            res = vapi_client.calls.get(call_id)
-            try:
-                analysis = vars(res.analysis) if res.analysis else None
-            except Exception as e:
-                analysis = None
-            
-            return {
-                "status": res.status,
-                "created_at": res.created_at,
-                "updated_at": res.updated_at,
-                "analysis": analysis,
-            }
+            pass
+        res = vapi_client.calls.get(call_id)
+        try:
+            analysis = vars(res.analysis) if res.analysis else None
+        except Exception as e:
+            analysis = None
+        
+        return {
+            "status": res.status,
+            "created_at": res.created_at,
+            "updated_at": res.updated_at,
+            "analysis": analysis,
+        }
     except Exception as e:
         print(f"Failed to create call: {str(e)}")
         return {
