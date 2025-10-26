@@ -16,18 +16,19 @@ async def test():
 
 
     async with client:
-        '''
-        result = await client.call_tool("make_call", {
+        result1 = await client.call_tool("search_web", {
+            "query": "barbers in sf near palace of fine arts"
+        })
+        print(result1)
+
+        '''result = await client.call_tool("make_call", {
             "phone_number": "+15109497606",
             "name": "Devin",
             "call_info_notes_for_agent": "Help Devin book a haircut (low taper fade) for tomorrow at noon"
         })
-        print(result)
-        '''        
-        result = await client.call_tool("search_web", {
-            "query": "barbers in sf near palace of fine arts"
-        })
-        print(result)
+        print(result)'''
+        
+       
 
 if __name__ == "__main__":
     asyncio.run(test())

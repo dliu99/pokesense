@@ -1,5 +1,6 @@
 from fastmcp.client.transports import NodeStdioTransport, PythonStdioTransport, SSETransport, StreamableHttpTransport
 import os
+import random
 from fastmcp import FastMCP, Client
 from dotenv import load_dotenv
 import requests
@@ -14,15 +15,51 @@ POKE_API_KEY = os.getenv('POKE_API_KEY')
 BRIGHT_DATA_API_KEY = os.getenv('BRIGHT_DATA_API_KEY')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 BRIGHT_DATA_MCP_URL = os.getenv('BRIGHT_DATA_MCP_URL')
-ass_id = "554cfbbc-f0d0-4e1b-aa88-b460ede9c553"
-phone_id = "0efe6b48-3b65-452d-9f4d-789aad9ca65c"
-
+ass_id = "c28fcf1f-6496-407e-a142-928acc714892"#"554cfbbc-f0d0-4e1b-aa88-b460ede9c553"
+phone_id = "babd43f2-9da6-4c45-b9be-f143d5f58e10"
+TTS_SERVER_URL = os.getenv("TTS_SERVER_URL", "http://localhost:3000")
 
 vapi_client = Vapi(token=os.getenv("VAPI_API_KEY"))
-mcp = FastMCP("pokesense mcp")
+mcp = FastMCP("superdial mcp")
 client = genai.Client(
     api_key=GEMINI_API_KEY,
 )
+
+def get_call_status_from_webhook(call_id: str, timeout_seconds: int = 300):
+    """
+    Poll the webhook status endpoint for call updates.
+    This queries the tts_server for call status received via webhook.
+    """
+    start_time = time.time()
+    poll_interval = 1  # Check every 1 second
+    
+    while time.time() - start_time < timeout_seconds:
+        try:
+            response = requests.get(f"{TTS_SERVER_URL}/api/calls/{call_id}/status", timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                status = data.get("status")
+                print(f"Webhook status check: {status}")
+                
+                if status == "ended":
+                    print(f"Call {call_id} ended via webhook")
+                    return {
+                        "status": status,
+                        "analysis": data.get("analysis"),
+                        "result": data.get("result"),
+                        "updated_at": data.get("updated_at")
+                    }
+            elif response.status_code == 404:
+                print(f"Call {call_id} not yet recorded by webhook")
+        except Exception as e:
+            print(f"Error checking webhook status: {e}")
+        
+        time.sleep(poll_interval)
+    
+    # Timeout - return last known status from Vapi
+    print(f"Webhook status check timeout after {timeout_seconds}s")
+    return None
+
 @mcp.tool(description="Search the web for information. Use this to get names & phone numbers of businesses to reserve or book something. Example: 'search_web(query='barbers in sf near palace of fine arts')'")
 async def search_web(query: str) -> dict:
     # bright data mcp works, but not bright data api? sorry for this convoluted setup
@@ -55,8 +92,8 @@ async def search_web(query: str) -> dict:
             "error": str(exc),
         }
 
-@mcp.tool(description="Make a call to a phone number (format: +1XXXXXXXXXX). Use this with the search engine tool to get names & phone numbers of businesses to reserve or book something.")
-def make_call(phone_number: str, name: str, call_info_notes_for_agent: str) -> dict:
+@mcp.tool(description="Make a call to a phone number (format: +1XXXXXXXXXX). Provide background information about your intentions (i.e. to book a haircut at 4pm) to the voice assistant.")
+def make_call(phone_number: str, target_name: str, my_name: str, call_info_notes_for_agent: str) -> dict:
     #generate first msg w/ gemini flash
     model = "gemini-flash-lite-latest"
     contents = [
@@ -64,9 +101,11 @@ def make_call(phone_number: str, name: str, call_info_notes_for_agent: str) -> d
             role="user",
             parts=[
                 types.Part.from_text(text=
-                f"""Write a two sentence first message for a voice assistant in the format of "Hi! I'm Poke, calling on behalf of (NAME) (REASON)."
-
-Call information notes: {call_info_notes_for_agent}"""),
+                f"""Write a two sentence first message for a voice assistant in the format of "{random.choice(['What\'s good', 'Yooo', 'Sup bro'])} {target_name}! I'm {my_name}, calling {target_name} to (REASON)."
+Use the following to complete the (REASON) blank:
+Call information notes: {call_info_notes_for_agent}
+Target name: {target_name}
+My name: {my_name}"""),
             ],
         ),
     ]
@@ -105,46 +144,53 @@ Call information notes: {call_info_notes_for_agent}"""),
             assistant_overrides={
                 "firstMessage": first_msg,
                 "variableValues": {
-                    "name": name,
+                    "target_name": target_name,
+                    "my_name": my_name,
                 }
             }
         )
         print(f"Call created: {res.status}")
         call_id = res.id
-        added = False
-        while True:
-            res = vapi_client.calls.get(call_id)
-            print(res.status)
-            if res.status == "in-progress" and not added:
-                print("Call is in progress")
 
+        if call_info_notes_for_agent:
+            try:
+                vapi_client.calls.update(
+                    call_id,
+                    {"messages": [{"role": "system", "message": call_info_notes_for_agent}]}
+                )
                 print("Call info notes for agent added", call_info_notes_for_agent)
-                added=True
-            if res.status == "ended":
-                print("Call ended")
-                break
-            time.sleep(1)
+            except Exception as update_error:
+                print(f"Failed to add call info notes: {update_error}")
+
+        # Use webhook-based status checking instead of polling
+        webhook_data = get_call_status_from_webhook(call_id, timeout_seconds=300)
         
-        print(vars(res.analysis))
-        try:
-            analysis = vars(res.analysis)
-        except Exception as e:
+        if webhook_data:
             return {
-                "status": "error",
-                "error": "The other party didn't pick up. Maybe try another time?",
+                "status": webhook_data.get("status"),
+                "analysis": webhook_data.get("analysis"),
+                "result": webhook_data.get("result"),
             }
-        return {
-            "status": res.status,
-            "created_at": res.created_at,
-            "updated_at": res.updated_at,
-            "analysis": vars(res.analysis) if res.analysis else None,
-        }
+        else:
+            # Fallback: Get final status from Vapi if webhook didn't complete
+            res = vapi_client.calls.get(call_id)
+            try:
+                analysis = vars(res.analysis) if res.analysis else None
+            except Exception as e:
+                analysis = None
+            
+            return {
+                "status": res.status,
+                "created_at": res.created_at,
+                "updated_at": res.updated_at,
+                "analysis": analysis,
+            }
     except Exception as e:
         print(f"Failed to create call: {str(e)}")
         return {
             "status": "error",
             "error": str(e),
-        }#ask for specific time from user
+        }
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
