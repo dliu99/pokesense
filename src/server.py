@@ -16,11 +16,12 @@ POKE_API_KEY = os.getenv('POKE_API_KEY')
 BRIGHT_DATA_API_KEY = os.getenv('BRIGHT_DATA_API_KEY')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 BRIGHT_DATA_MCP_URL = os.getenv('BRIGHT_DATA_MCP_URL')
-ass_id = "c28fcf1f-6496-407e-a142-928acc714892"#"554cfbbc-f0d0-4e1b-aa88-b460ede9c553"
+ass_id = "7341414f-3916-49a6-9501-69de1d5690c7"
+#"c28fcf1f-6496-407e-a142-928acc714892"#"554cfbbc-f0d0-4e1b-aa88-b460ede9c553"
 phone_id = "babd43f2-9da6-4c45-b9be-f143d5f58e10"
 TTS_SERVER_URL = os.getenv("TTS_SERVER_URL", "https://f2ed034e2ba5.ngrok-free.app")
 
-vapi_client = Vapi(token=os.getenv("VAPI_API_KEY"))
+vapi_client = Vapi(token="513d7c4b-27d5-4eb0-9c3d-4c61a2bcf647")
 mcp = FastMCP("superdial mcp")
 client = genai.Client(
     api_key=GEMINI_API_KEY,
