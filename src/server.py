@@ -25,11 +25,7 @@ client = genai.Client(
 )
 @mcp.tool(description="Search the web for information. Use this to get names & phone numbers of businesses to reserve or book something. Example: 'search_web(query='barbers in sf near palace of fine arts')'")
 async def search_web(query: str) -> dict:
-    if not BRIGHT_DATA_MCP_URL:
-        return {
-            "status": "error",
-            "error": "BRIGHT_DATA_MCP_URL is not configured",
-        }
+    # bright data mcp works, but not bright data api? sorry for this convoluted setup
     
     try:
         remote_client = Client(BRIGHT_DATA_MCP_URL)
