@@ -18,7 +18,7 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 BRIGHT_DATA_MCP_URL = os.getenv('BRIGHT_DATA_MCP_URL')
 ass_id = "7341414f-3916-49a6-9501-69de1d5690c7"
 #"c28fcf1f-6496-407e-a142-928acc714892"#"554cfbbc-f0d0-4e1b-aa88-b460ede9c553"
-phone_id = "babd43f2-9da6-4c45-b9be-f143d5f58e10"
+phone_id = "79421ad1-ee29-4dc1-a6f2-cd83a922486f"
 TTS_SERVER_URL = os.getenv("TTS_SERVER_URL", "https://f2ed034e2ba5.ngrok-free.app")
 
 vapi_client = Vapi(token="513d7c4b-27d5-4eb0-9c3d-4c61a2bcf647")
@@ -27,7 +27,7 @@ client = genai.Client(
     api_key=GEMINI_API_KEY,
 )
 
-def get_call_status_from_webhook(call_id: str, timeout_seconds: int = 300):
+def get_call_status_from_webhook(call_id: str, timeout_seconds: int = 400):
     """
     Poll the webhook status endpoint for call updates.
     This queries the tts_server for call status received via webhook.
@@ -37,7 +37,7 @@ def get_call_status_from_webhook(call_id: str, timeout_seconds: int = 300):
     
     while time.time() - start_time < timeout_seconds:
         try:
-            response = requests.get(f"{TTS_SERVER_URL}/api/calls/{call_id}/status", timeout=5)
+            response = requests.get(f"{TTS_SERVER_URL}/api/calls/{call_id}/status", timeout=10)
             if response.status_code == 200:
                 data = response.json()
                 status = data.get("status")
@@ -166,7 +166,7 @@ My name: {my_name}"""),
                 print(f"Failed to add call info notes: {update_error}")
 
         # Use webhook-based status checking instead of polling
-        webhook_data = get_call_status_from_webhook(call_id, timeout_seconds=300)
+        webhook_data = get_call_status_from_webhook(call_id, timeout_seconds=400)
         
         if webhook_data:
             return {
