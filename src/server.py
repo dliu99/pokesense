@@ -60,7 +60,8 @@ def get_call_status_from_webhook(call_id: str, timeout_seconds: int = 300):
     # Timeout - return last known status from Vapi
     print(f"Webhook status check timeout after {timeout_seconds}s")
     return None
-
+# cut b/c issues in prod?
+'''
 @mcp.tool(description="Search the web for information. Use this to get names & phone numbers of businesses to reserve or book something. Example: 'search_web(query='barbers in sf near palace of fine arts')'")
 async def search_web(query: str) -> dict:
     # bright data mcp works, but not bright data api? sorry for this convoluted setup
@@ -92,7 +93,7 @@ async def search_web(query: str) -> dict:
             "status": "error",
             "error": str(exc),
         }
-
+'''
 @mcp.tool(description="Make a call to a phone number (format: +1XXXXXXXXXX). Provide background information about your intentions (i.e. to book a haircut at 4pm) to the voice assistant.")
 def make_call(phone_number: str, target_name: str, my_name: str, call_info_notes_for_agent: str) -> dict:
     #generate first msg w/ gemini flash
