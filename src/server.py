@@ -19,11 +19,45 @@ phone_id = "0efe6b48-3b65-452d-9f4d-789aad9ca65c"
 
 
 vapi_client = Vapi(token=os.getenv("VAPI_API_KEY"))
-mcp = FastMCP("PokeSense MCP Server")
+mcp = FastMCP("pokesense mcp")
 client = genai.Client(
     api_key=GEMINI_API_KEY,
 )
+@mcp.tool(description="Search the web for information. Use this to get names & phone numbers of businesses to reserve or book something. Example: 'search_web(query='barbers in sf near palace of fine arts')'")
+async def search_web(query: str) -> dict:
+    if not BRIGHT_DATA_MCP_URL:
+        return {
+            "status": "error",
+            "error": "BRIGHT_DATA_MCP_URL is not configured",
+        }
+    
+    try:
+        remote_client = Client(BRIGHT_DATA_MCP_URL)
+        async with remote_client:
 
+            result = await remote_client.call_tool(
+                "search_engine",
+                {
+                    "query": query,
+                    "engine": "google",  #bing or yandex
+                }
+            )
+            
+            search_results = result.content if hasattr(result, 'content') else result
+            print(f"Search results for '{query}':")
+            print(search_results)
+            
+            return {
+                "status": "success",
+                "data": search_results,
+                "query": query,
+            }
+    except Exception as exc:
+        print(f"Failed to search using Bright Data MCP server: {exc}")
+        return {
+            "status": "error",
+            "error": str(exc),
+        }
 
 @mcp.tool(description="Make a call to a phone number (format: +1XXXXXXXXXX). Use this with the search engine tool to get names & phone numbers of businesses to reserve or book something.")
 def make_call(phone_number: str, name: str, call_info_notes_for_agent: str) -> dict:
@@ -65,28 +99,12 @@ Call information notes: {call_info_notes_for_agent}"""),
     
     print("getting")
     ass = vapi_client.assistants.get(id=ass_id)
-    print("updating")
-    vapi_client.assistants.update(id=ass_id,
-    voice={
-        "provider": "custom-voice",
-        "server": {
-            "url": "https://04148ca71dd4.ngrok-free.app/api/synthesize",
-            #"url": "https://api.fish.audio/v1/tts?reference_id=ce7e7e565bc9460db8df2dca666a3b67",
-            "secret": os.getenv("FISH_API_SECRET"),
-            "timeoutSeconds": 10,
-            #"reference_id": "ce7e7e565bc9460db8df2dca666a3b67",
-                "headers": {
-                "Content-Type": "application/json",
-                "X-API-Version": "v1",
-            },
-        },
-    
-    })
+
     print("\nASKDJSKJD\n")
     try:
         res = vapi_client.calls.create(
             phone_number_id=phone_id,
-            customer={"number": "+15109497606"},
+            customer={"number": "+15109497606"}, #change to phone number in prod
             assistant_id=ass_id,
             assistant_overrides={
                 "firstMessage": first_msg,
