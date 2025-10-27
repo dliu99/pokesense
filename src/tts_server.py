@@ -131,8 +131,7 @@ def call_webhook():
         
         # Store the call state
         with _calls_lock:
-            if call_id not in _calls_state:
-                _calls_state[call_id] = {}
+            _calls_state[call_id] = {}
             
             _calls_state[call_id]["status"] = status
             _calls_state[call_id]["updated_at"] = time.time()
